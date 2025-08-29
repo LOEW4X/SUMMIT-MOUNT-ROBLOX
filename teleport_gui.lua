@@ -1,81 +1,89 @@
--- [ AUTO TELEPORT MENU - ANDROID COMPATIBLE ]
+-- [AUTO TELEPORT MENU ANDROID & PC STABLE]
 local player = game.Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 local UserInputService = game:GetService("UserInputService")
 
 local checkpoints = {
     {"CP 1", CFrame.new(171, -213, 74)},
-    {"PUNCAK", CFrame.new(150, -197, 126)},
+    {"PUNCAK", CFrame.new(151, -195, 127)},
     {"MODE", CFrame.new(114, -231, 122)}
 }
 
 local autoTeleport = false
 
--- ScreenGui utama
+-- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Name = "TeleportMenu"
+ScreenGui.Name = "TeleportMenuGui"
 
 -- Menu Frame
 local MenuFrame = Instance.new("Frame")
 MenuFrame.Parent = ScreenGui
 MenuFrame.Size = UDim2.new(0,180,0,80)
 MenuFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-MenuFrame.Visible = false
 MenuFrame.BorderSizePixel = 0
+MenuFrame.Visible = false
 
--- Tombol Auto Teleport ON/OFF
-local autoBtn = Instance.new("TextButton")
-autoBtn.Parent = MenuFrame
-autoBtn.Size = UDim2.new(1,0,1,0)
-autoBtn.Position = UDim2.new(0,0,0,0)
-autoBtn.BackgroundColor3 = Color3.fromRGB(138,43,226)
-autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
-autoBtn.Text = "Auto Teleport: OFF"
-autoBtn.Font = Enum.Font.SourceSansBold
-autoBtn.TextSize = 18
+-- Auto Teleport Button
+local AutoBtn = Instance.new("TextButton")
+AutoBtn.Parent = MenuFrame
+AutoBtn.Size = UDim2.new(1,0,1,0)
+AutoBtn.BackgroundColor3 = Color3.fromRGB(138,43,226)
+AutoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+AutoBtn.Font = Enum.Font.SourceSansBold
+AutoBtn.TextSize = 18
+AutoBtn.Text = "Auto Teleport: OFF"
 
-autoBtn.MouseButton1Click:Connect(function()
+AutoBtn.MouseButton1Click:Connect(function()
     autoTeleport = not autoTeleport
-    autoBtn.Text = "Auto Teleport: "..(autoTeleport and "ON" or "OFF")
+    AutoBtn.Text = "Auto Teleport: "..(autoTeleport and "ON" or "OFF")
 end)
 
--- Icon draggable
-local showIcon = Instance.new("TextButton")
-showIcon.Parent = ScreenGui
-showIcon.Size = UDim2.new(0,50,0,50)
-showIcon.Position = UDim2.new(0,100,0,100)
-showIcon.Text = "TP"
-showIcon.Font = Enum.Font.SourceSansBold
-showIcon.TextSize = 20
-showIcon.TextColor3 = Color3.fromRGB(255,255,255)
-showIcon.BackgroundColor3 = Color3.fromRGB(0,0,0)
-showIcon.BorderSizePixel = 0
+-- Icon
+local Icon = Instance.new("TextButton")
+Icon.Parent = ScreenGui
+Icon.Size = UDim2.new(0,50,0,50)
+Icon.Position = UDim2.new(0,100,0,100)
+Icon.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Icon.BorderSizePixel = 0
+Icon.Text = "TP"
+Icon.Font = Enum.Font.SourceSansBold
+Icon.TextSize = 20
+Icon.TextColor3 = Color3.fromRGB(255,255,255)
 
--- Drag logic (Mouse & Touch)
+-- Drag logic
 local dragging = false
-local dragInput, dragStart, startPos
+local dragStart, startPos
+local dragInput
 
-local function startDrag(input)
-    dragging = true
-    dragStart = input.Position
-    startPos = showIcon.Position
-
-    input.Changed:Connect(function()
-        if input.UserInputState == Enum.UserInputState.End then
-            dragging = false
-        end
-    end)
+local function update(input)
+    local delta = input.Position - dragStart
+    local pos = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+    Icon.Position = pos
+    if MenuFrame.Visible then
+        MenuFrame.Position = pos
+    end
 end
 
-showIcon.InputBegan:Connect(function(input)
+Icon.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        startDrag(input)
+        dragging = true
+        dragStart = input.Position
+        startPos = Icon.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
-showIcon.InputChanged:Connect(function(input)
+Icon.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
@@ -83,23 +91,42 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input == dragInput then
-        local delta = input.Position - dragStart
-        local newPos = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
-        showIcon.Position = newPos
-        if MenuFrame.Visible then
-            MenuFrame.Position = newPos
-        end
+        update(input)
     end
 end)
 
--- Toggle menu (tap icon)
-showIcon.Activated:Connect(function()
+-- Toggle menu (tap or click)
+Icon.Activated:Connect(function()
     MenuFrame.Visible = not MenuFrame.Visible
     if MenuFrame.Visible then
-        MenuFrame.Position = showIcon.Position
+        MenuFrame.Position = Icon.Position
+    end
+end)
+
+-- Auto teleport sequence
+spawn(function()
+    while true do
+        wait(1)
+        if autoTeleport and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            for i, cp in ipairs(checkpoints) do
+                if not autoTeleport then break end
+                local name, cf = cp[1], cp[2]
+                player.Character.HumanoidRootPart.CFrame = cf
+
+                -- Summit update
+                if name == "PUNCAK" then
+                    local leaderstats = player:FindFirstChild("leaderstats")
+                    if leaderstats and leaderstats:FindFirstChild("Summit") then
+                        leaderstats.Summit.Value = leaderstats.Summit.Value + 1
+                    end
+                end
+                wait(2)
+            end
+            if autoTeleport then
+                autoTeleport = false
+                AutoBtn.Text = "Auto Teleport: OFF"
+            end
+        end
     end
 end)
 
