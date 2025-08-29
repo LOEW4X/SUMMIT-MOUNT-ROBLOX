@@ -35,25 +35,27 @@ toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.TextSize = 18
 
 local autoTeleport = false
-local pauseTeleport = false -- pause saat hold proximity
+local holdingPrompt = false -- pause saat hold proximity
 
+-- Fungsi teleport
 local function teleportTo(cf)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     hrp.CFrame = cf + Vector3.new(0, 3, 0)
 end
 
+-- Fungsi auto teleport
 local function startAutoTeleport()
     spawn(function()
         while autoTeleport do
             for _, name in ipairs(checkpointOrder) do
                 if not autoTeleport then break end
-                -- tunggu jika sedang pause
-                while pauseTeleport and autoTeleport do
-                    wait()
+                -- tunggu jika sedang hold prompt
+                while holdingPrompt and autoTeleport do
+                    task.wait()
                 end
                 teleportTo(checkpoints[name])
-                wait(1)
+                task.wait(1)
             end
         end
     end)
@@ -81,6 +83,7 @@ iconBtn.Text = "≡"
 iconBtn.Font = Enum.Font.SourceSansBold
 iconBtn.TextSize = 24
 
+-- Show/Hide GUI
 local guiVisible = true
 iconBtn.MouseButton1Click:Connect(function()
     guiVisible = not guiVisible
@@ -133,13 +136,13 @@ RunService.Heartbeat:Connect(function()
     for _, prompt in pairs(workspace:GetDescendants()) do
         if prompt:IsA("ProximityPrompt") and prompt.Enabled then
             local distance = (prompt.Parent.Position - hrp.Position).Magnitude
-            if distance <= prompt.MaxActivationDistance then
+            if distance <= prompt.MaxActivationDistance and not holdingPrompt then
                 spawn(function()
-                    pauseTeleport = true -- pause auto teleport
+                    holdingPrompt = true -- pause auto teleport
                     prompt:InputHoldBegin()
-                    wait(prompt.HoldDuration)
+                    task.wait(prompt.HoldDuration)
                     prompt:InputHoldEnd()
-                    pauseTeleport = false -- lanjut auto teleport
+                    holdingPrompt = false -- lanjut auto teleport
                 end)
             end
         end
