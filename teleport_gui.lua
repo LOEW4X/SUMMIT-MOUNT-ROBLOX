@@ -1,107 +1,44 @@
---// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Optimized Auto Hold ProximityPrompt
+-- [ SIMPLE TELEPORT MENU ]
 local player = game.Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local PlayerGui = player:WaitForChild("PlayerGui")
 
--- Daftar checkpoint
 local checkpoints = {
     ["CP 1"] = CFrame.new(171, -213, 74),
     ["PUNCAK"] = CFrame.new(151, -195, 127),
-    ["MODE"] = CFrame.new(114, -231, 122)
+    ["MODE"] = CFrame.new(114, 231, 122)
 }
-local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
--- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.Parent = PlayerGui
+ScreenGui.ResetOnSpawn = false
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 200, 0, 50)
-Frame.Position = UDim2.new(0.5, -100, 0.5, -25)
-Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Frame.BorderSizePixel = 0
-Frame.Visible = true
-
-local toggleBtn = Instance.new("TextButton", Frame)
-toggleBtn.Size = UDim2.new(1, -10, 1, -10)
-toggleBtn.Position = UDim2.new(0, 5, 0, 5)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-toggleBtn.BackgroundTransparency = 0.5
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Text = "Auto Teleport: OFF"
-toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.TextSize = 18
-
-local autoTeleport = false
-local holdingPrompt = false
-local pauseAfterPrompt = false
-
--- Teleport Function
-local function teleportTo(cf)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    hrp.CFrame = cf + Vector3.new(0, 3, 0)
-end
-
--- Auto Teleport Loop
-local function startAutoTeleport()
-    spawn(function()
-        while autoTeleport do
-            for _, name in ipairs(checkpointOrder) do
-                if not autoTeleport then break end
-                -- tunggu jika sedang hold prompt atau pause setelah prompt
-                while (holdingPrompt or pauseAfterPrompt) and autoTeleport do
-                    task.wait(0.1)
-                end
-                teleportTo(checkpoints[name])
-                task.wait(1)
+local y = 100 -- posisi awal Y
+for name, cf in pairs(checkpoints) do
+    local btn = Instance.new("TextButton")
+    btn.Parent = ScreenGui
+    btn.Size = UDim2.new(0,150,0,40)
+    btn.Position = UDim2.new(0,20,0,y)
+    btn.BackgroundColor3 = Color3.fromRGB(138,43,226) -- ungu
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = "Teleport "..name
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    
+    btn.MouseButton1Click:Connect(function()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = cf
+        end
+        -- kalau ke PUNCAK auto tambah Summit
+        if name == "PUNCAK" then
+            local leaderstats = player:FindFirstChild("leaderstats")
+            if leaderstats and leaderstats:FindFirstChild("Summit") then
+                leaderstats.Summit.Value = leaderstats.Summit.Value + 1
             end
         end
     end)
+
+    y = y + 50 -- geser ke bawah biar ga numpuk
 end
-
-toggleBtn.MouseButton1Click:Connect(function()
-    autoTeleport = not autoTeleport
-    if autoTeleport then
-        toggleBtn.Text = "Auto Teleport: ON"
-        toggleBtn.TextColor3 = Color3.fromRGB(200, 0, 200)
-        startAutoTeleport()
-    else
-        toggleBtn.Text = "Auto Teleport: OFF"
-        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-end)
-
--- Icon Button
-local iconBtn = Instance.new("TextButton", ScreenGui)
-iconBtn.Size = UDim2.new(0, 40, 0, 40)
-iconBtn.Position = UDim2.new(0, 10, 0.5, -20)
-iconBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-iconBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-iconBtn.Text = "≡"
-iconBtn.Font = Enum.Font.SourceSansBold
-iconBtn.TextSize = 24
-
-local guiVisible = true
-iconBtn.MouseButton1Click:Connect(function()
-    guiVisible = not guiVisible
-    Frame.Visible = guiVisible
-end)
-
--- Drag Icon
-local dragging, dragInput, dragStart, startPos = false
-iconBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = iconBtn.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
 iconBtn.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
