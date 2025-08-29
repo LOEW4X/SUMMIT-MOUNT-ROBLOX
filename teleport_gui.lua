@@ -1,4 +1,4 @@
---// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Auto Hold ProximityPrompt dengan Pause Teleport
+--// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Optimized Auto Hold ProximityPrompt
 local player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -11,11 +11,10 @@ local checkpoints = {
 }
 local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
--- Buat ScreenGui
+-- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama GUI
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 200, 0, 50)
 Frame.Position = UDim2.new(0.5, -100, 0.5, -25)
@@ -23,7 +22,6 @@ Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Frame.BorderSizePixel = 0
 Frame.Visible = true
 
--- Tombol On/Off Auto Teleport
 local toggleBtn = Instance.new("TextButton", Frame)
 toggleBtn.Size = UDim2.new(1, -10, 1, -10)
 toggleBtn.Position = UDim2.new(0, 5, 0, 5)
@@ -35,24 +33,25 @@ toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.TextSize = 18
 
 local autoTeleport = false
-local holdingPrompt = false -- pause saat hold proximity
+local holdingPrompt = false
+local pauseAfterPrompt = false
 
--- Fungsi teleport
+-- Teleport Function
 local function teleportTo(cf)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
     hrp.CFrame = cf + Vector3.new(0, 3, 0)
 end
 
--- Fungsi auto teleport
+-- Auto Teleport Loop
 local function startAutoTeleport()
     spawn(function()
         while autoTeleport do
             for _, name in ipairs(checkpointOrder) do
                 if not autoTeleport then break end
-                -- tunggu jika sedang hold prompt
-                while holdingPrompt and autoTeleport do
-                    task.wait()
+                -- tunggu jika sedang hold prompt atau pause setelah prompt
+                while (holdingPrompt or pauseAfterPrompt) and autoTeleport do
+                    task.wait(0.1)
                 end
                 teleportTo(checkpoints[name])
                 task.wait(1)
@@ -65,7 +64,7 @@ toggleBtn.MouseButton1Click:Connect(function()
     autoTeleport = not autoTeleport
     if autoTeleport then
         toggleBtn.Text = "Auto Teleport: ON"
-        toggleBtn.TextColor3 = Color3.fromRGB(200, 0, 200) -- Ungu
+        toggleBtn.TextColor3 = Color3.fromRGB(200, 0, 200)
         startAutoTeleport()
     else
         toggleBtn.Text = "Auto Teleport: OFF"
@@ -73,7 +72,7 @@ toggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Tombol icon menu
+-- Icon Button
 local iconBtn = Instance.new("TextButton", ScreenGui)
 iconBtn.Size = UDim2.new(0, 40, 0, 40)
 iconBtn.Position = UDim2.new(0, 10, 0.5, -20)
@@ -83,14 +82,13 @@ iconBtn.Text = "≡"
 iconBtn.Font = Enum.Font.SourceSansBold
 iconBtn.TextSize = 24
 
--- Show/Hide GUI
 local guiVisible = true
 iconBtn.MouseButton1Click:Connect(function()
     guiVisible = not guiVisible
     Frame.Visible = guiVisible
 end)
 
--- Drag ikon menu
+-- Drag Icon
 local dragging, dragInput, dragStart, startPos = false
 iconBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -102,6 +100,58 @@ iconBtn.InputBegan:Connect(function(input)
                 dragging = false
             end
         end)
+    end
+end)
+iconBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        iconBtn.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        Frame.Position = UDim2.new(
+            0,
+            iconBtn.Position.X.Offset + 50,
+            iconBtn.Position.Y.Scale,
+            iconBtn.Position.Y.Offset - 25
+        )
+    end
+end)
+
+-- Optimized Auto Hold ProximityPrompt
+spawn(function()
+    while true do
+        task.wait(0.2) -- loop ringan, cek tiap 0.2 detik saja
+        if not player.Character then continue end
+        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then continue end
+
+        for _, prompt in pairs(workspace:GetDescendants()) do
+            if prompt:IsA("ProximityPrompt") and prompt.Enabled and not holdingPrompt then
+                local distance = (prompt.Parent.Position - hrp.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    spawn(function()
+                        holdingPrompt = true
+                        prompt:InputHoldBegin()
+                        task.wait(prompt.HoldDuration)
+                        prompt:InputHoldEnd()
+                        holdingPrompt = false
+                        pauseAfterPrompt = true
+                        task.wait(0.5) -- berhenti sebentar sebelum teleport lanjut
+                        pauseAfterPrompt = false
+                    end)
+                end
+            end
+        end
+    end
+end)
     end
 end)
 iconBtn.InputChanged:Connect(function(input)
