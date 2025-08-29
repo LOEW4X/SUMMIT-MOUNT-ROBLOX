@@ -1,8 +1,8 @@
---// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Optimized Auto Hold ProximityPrompt
+--// Auto Teleport + Auto Hold ProximityPrompt + Simple GUI
 local player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 
--- Script control
+-- Kontrol script
 local scriptEnabled = false
 local autoTeleport = false
 local holdingPrompt = false
@@ -16,95 +16,45 @@ local checkpoints = {
 }
 local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
--- GUI utama (Frame + tombol)
-local ScreenGuiMain = Instance.new("ScreenGui")
-ScreenGuiMain.Parent = player:WaitForChild("PlayerGui")
+-- GUI utama
+local pg = player:WaitForChild("PlayerGui")
+local sg = Instance.new("ScreenGui", pg)
 
-local Frame = Instance.new("Frame", ScreenGuiMain)
-Frame.Size = UDim2.new(0,200,0,50)
-Frame.Position = UDim2.new(0.5,-100,0.5,-25)
-Frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-Frame.BackgroundTransparency = 0.8
-Frame.BorderSizePixel = 2
-Frame.BorderColor3 = Color3.fromRGB(200,0,200)
-Frame.BorderTransparency = 0.5
-Frame.ZIndex = 1
+local frame = Instance.new("Frame", sg)
+frame.Size = UDim2.new(0,220,0,60)
+frame.Position = UDim2.new(0.5,-110,0.5,-30)
+frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+frame.BackgroundTransparency = 0.8
+frame.BorderSizePixel = 2
+frame.BorderColor3 = Color3.fromRGB(200,0,200)
+frame.BorderTransparency = 0.5
 
-local toggleBtn = Instance.new("TextButton", Frame)
-toggleBtn.Size = UDim2.new(1,-10,1,-10)
-toggleBtn.Position = UDim2.new(0,5,0,5)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-toggleBtn.BackgroundTransparency = 0.8
-toggleBtn.BorderSizePixel = 1
-toggleBtn.BorderColor3 = Color3.fromRGB(200,0,200)
-toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
-toggleBtn.Text = "Auto Teleport: OFF"
-toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.TextSize = 18
-toggleBtn.ZIndex = 2
+-- Tombol toggle Auto Teleport
+local toggle = Instance.new("TextButton", frame)
+toggle.Size = UDim2.new(1,-30,1,-10)
+toggle.Position = UDim2.new(0,5,0,5)
+toggle.BackgroundColor3 = Color3.fromRGB(0,0,0)
+toggle.BackgroundTransparency = 0.8
+toggle.BorderSizePixel = 1
+toggle.BorderColor3 = Color3.fromRGB(200,0,200)
+toggle.TextColor3 = Color3.fromRGB(255,255,255)
+toggle.Text = "Auto Teleport: OFF"
+toggle.Font = Enum.Font.SourceSansBold
+toggle.TextSize = 16
 
--- GUI Icon Menu (terpisah supaya selalu terlihat)
-local ScreenGuiIcon = Instance.new("ScreenGui")
-ScreenGuiIcon.Parent = player:WaitForChild("PlayerGui")
+-- Tombol Hide/Show
+local hideBtn = Instance.new("TextButton", frame)
+hideBtn.Size = UDim2.new(0,20,0,20)
+hideBtn.Position = UDim2.new(1,-25,0,5)
+hideBtn.BackgroundColor3 = Color3.fromRGB(200,0,200)
+hideBtn.BackgroundTransparency = 0.5
+hideBtn.Text = "X"
+hideBtn.TextSize = 14
+hideBtn.TextColor3 = Color3.fromRGB(255,255,255)
+hideBtn.Font = Enum.Font.SourceSansBold
 
-local iconBtn = Instance.new("TextButton", ScreenGuiIcon)
-iconBtn.Size = UDim2.new(0,40,0,40)
-iconBtn.Position = UDim2.new(0,10,0.5,-20)
-iconBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-iconBtn.BackgroundTransparency = 0.8
-iconBtn.BorderSizePixel = 1
-iconBtn.BorderColor3 = Color3.fromRGB(200,0,200)
-iconBtn.TextColor3 = Color3.fromRGB(255,255,255)
-iconBtn.Text = "≡"
-iconBtn.Font = Enum.Font.SourceSansBold
-iconBtn.TextSize = 24
-iconBtn.ZIndex = 3
-
--- Show/hide GUI utama
-local guiVisible = true
-iconBtn.MouseButton1Click:Connect(function()
-    guiVisible = not guiVisible
-    Frame.Visible = guiVisible
-end)
-
--- Drag icon
-local dragging, dragInput, dragStart, startPos = false
-iconBtn.InputBegan:Connect(function(input)
-    if not scriptEnabled then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = iconBtn.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-iconBtn.InputChanged:Connect(function(input)
-    if not scriptEnabled then return end
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if not scriptEnabled then return end
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        iconBtn.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-        Frame.Position = UDim2.new(
-            0,
-            iconBtn.Position.X.Offset + 50,
-            iconBtn.Position.Y.Scale,
-            iconBtn.Position.Y.Offset - 25
-        )
-    end
+hideBtn.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
 end)
 
 -- Teleport function
@@ -114,7 +64,7 @@ local function teleportTo(cf)
     hrp.CFrame = cf + Vector3.new(0,3,0)
 end
 
--- Auto teleport
+-- Auto teleport loop
 local function startAutoTeleport()
     spawn(function()
         while autoTeleport and scriptEnabled do
@@ -131,20 +81,20 @@ local function startAutoTeleport()
 end
 
 -- Toggle button
-toggleBtn.MouseButton1Click:Connect(function()
+toggle.MouseButton1Click:Connect(function()
     scriptEnabled = not scriptEnabled
     autoTeleport = scriptEnabled
     if scriptEnabled then
-        toggleBtn.Text = "Auto Teleport: ON"
-        toggleBtn.TextColor3 = Color3.fromRGB(200,0,200)
+        toggle.Text = "Auto Teleport: ON"
+        toggle.TextColor3 = Color3.fromRGB(200,0,200)
         startAutoTeleport()
     else
-        toggleBtn.Text = "Auto Teleport: OFF"
-        toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        toggle.Text = "Auto Teleport: OFF"
+        toggle.TextColor3 = Color3.fromRGB(255,255,255)
     end
 end)
 
--- Optimized auto hold ProximityPrompt
+-- Auto hold ProximityPrompt loop
 spawn(function()
     while true do
         task.wait(0.2)
