@@ -16,12 +16,11 @@ local checkpoints = {
 }
 local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
+-- GUI utama (Frame + tombol)
+local ScreenGuiMain = Instance.new("ScreenGui")
+ScreenGuiMain.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama GUI
-local Frame = Instance.new("Frame", ScreenGui)
+local Frame = Instance.new("Frame", ScreenGuiMain)
 Frame.Size = UDim2.new(0,200,0,50)
 Frame.Position = UDim2.new(0.5,-100,0.5,-25)
 Frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
@@ -29,9 +28,8 @@ Frame.BackgroundTransparency = 0.8
 Frame.BorderSizePixel = 2
 Frame.BorderColor3 = Color3.fromRGB(200,0,200)
 Frame.BorderTransparency = 0.5
-Frame.ZIndex = 1  -- posisi di belakang ikon
+Frame.ZIndex = 1
 
--- Tombol toggle Auto Teleport
 local toggleBtn = Instance.new("TextButton", Frame)
 toggleBtn.Size = UDim2.new(1,-10,1,-10)
 toggleBtn.Position = UDim2.new(0,5,0,5)
@@ -43,10 +41,13 @@ toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
 toggleBtn.Text = "Auto Teleport: OFF"
 toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.TextSize = 18
-toggleBtn.ZIndex = 2 -- di atas frame
+toggleBtn.ZIndex = 2
 
--- Icon menu
-local iconBtn = Instance.new("TextButton", ScreenGui)
+-- GUI Icon Menu (terpisah supaya selalu terlihat)
+local ScreenGuiIcon = Instance.new("ScreenGui")
+ScreenGuiIcon.Parent = player:WaitForChild("PlayerGui")
+
+local iconBtn = Instance.new("TextButton", ScreenGuiIcon)
 iconBtn.Size = UDim2.new(0,40,0,40)
 iconBtn.Position = UDim2.new(0,10,0.5,-20)
 iconBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
@@ -57,9 +58,9 @@ iconBtn.TextColor3 = Color3.fromRGB(255,255,255)
 iconBtn.Text = "≡"
 iconBtn.Font = Enum.Font.SourceSansBold
 iconBtn.TextSize = 24
-iconBtn.ZIndex = 3 -- selalu paling depan
+iconBtn.ZIndex = 3
 
--- Show/hide GUI
+-- Show/hide GUI utama
 local guiVisible = true
 iconBtn.MouseButton1Click:Connect(function()
     guiVisible = not guiVisible
@@ -106,72 +107,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Teleport function
-local function teleportTo(cf)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    hrp.CFrame = cf + Vector3.new(0,3,0)
-end
-
--- Auto teleport
-local function startAutoTeleport()
-    spawn(function()
-        while autoTeleport and scriptEnabled do
-            for _,name in ipairs(checkpointOrder) do
-                if not autoTeleport or not scriptEnabled then break end
-                while (holdingPrompt or pauseAfterPrompt) and autoTeleport and scriptEnabled do
-                    task.wait(0.1)
-                end
-                teleportTo(checkpoints[name])
-                task.wait(1)
-            end
-        end
-    end)
-end
-
--- Toggle button
-toggleBtn.MouseButton1Click:Connect(function()
-    scriptEnabled = not scriptEnabled
-    autoTeleport = scriptEnabled
-    if scriptEnabled then
-        toggleBtn.Text = "Auto Teleport: ON"
-        toggleBtn.TextColor3 = Color3.fromRGB(200,0,200)
-        startAutoTeleport()
-    else
-        toggleBtn.Text = "Auto Teleport: OFF"
-        toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    end
-end)
-
--- Optimized auto hold ProximityPrompt
-spawn(function()
-    while true do
-        task.wait(0.2)
-        if not scriptEnabled then continue end
-        if not player.Character then continue end
-        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then continue end
-
-        for _,prompt in pairs(workspace:GetDescendants()) do
-            if not scriptEnabled then break end
-            if prompt:IsA("ProximityPrompt") and prompt.Enabled and not holdingPrompt then
-                local distance = (prompt.Parent.Position - hrp.Position).Magnitude
-                if distance <= prompt.MaxActivationDistance then
-                    spawn(function()
-                        holdingPrompt = true
-                        prompt:InputHoldBegin()
-                        task.wait(prompt.HoldDuration)
-                        prompt:InputHoldEnd()
-                        holdingPrompt = false
-                        pauseAfterPrompt = true
-                        task.wait(0.5)
-                        pauseAfterPrompt = false
-                    end)
-                end
-            end
-        end
-    end
-end)
 -- Teleport function
 local function teleportTo(cf)
     local char = player.Character or player.CharacterAdded:Wait()
