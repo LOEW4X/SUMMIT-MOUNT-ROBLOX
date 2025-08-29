@@ -1,7 +1,9 @@
---// Teleport GUI with Auto Teleport & Draggable Menu Icon + Stylish Button
+--// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Auto ProximityPrompt
 -- Dibuat untuk Executor (loadstring)
 
 local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 -- Daftar checkpoint
 local checkpoints = {
@@ -61,12 +63,10 @@ toggleBtn.MouseButton1Click:Connect(function()
     if autoTeleport then
         toggleBtn.Text = "Auto Teleport: ON"
         toggleBtn.TextColor3 = Color3.fromRGB(200, 0, 200) -- Ungu
+        startAutoTeleport()
     else
         toggleBtn.Text = "Auto Teleport: OFF"
         toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255) -- Putih
-    end
-    if autoTeleport then
-        startAutoTeleport()
     end
 end)
 
@@ -88,7 +88,6 @@ iconBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Drag bebas ikon menu
-local UserInputService = game:GetService("UserInputService")
 local dragging = false
 local dragInput, dragStart, startPos
 
@@ -102,6 +101,50 @@ iconBtn.InputBegan:Connect(function(input)
                 dragging = false
             end
         end)
+    end
+end)
+
+iconBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        iconBtn.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        -- GUI utama mengikuti ikon
+        Frame.Position = UDim2.new(
+            0,
+            iconBtn.Position.X.Offset + 50,
+            iconBtn.Position.Y.Scale,
+            iconBtn.Position.Y.Offset - 25
+        )
+    end
+end)
+
+-- Auto click ProximityPrompt
+RunService.Heartbeat:Connect(function()
+    for _, prompt in pairs(workspace:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+            local playerChar = player.Character
+            if playerChar and playerChar:FindFirstChild("HumanoidRootPart") then
+                local hrp = playerChar.HumanoidRootPart
+                local distance = (prompt.Parent.Position - hrp.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    prompt:InputHoldBegin()
+                    prompt:InputHoldEnd()
+                end
+            end
+        end
+    end
+end)
     end
 end)
 
