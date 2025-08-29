@@ -1,107 +1,98 @@
---// Teleport GUI by LOEW4X (versi lengkap dengan Show/Hide)
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+-- EXCELLENT Teleport GUI
+-- Buat dieksekusi lewat executor (bukan Studio)
+-- Author: Saputra Aryadi
 
--- GUI utama
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TeleportGui"
-screenGui.Parent = game.CoreGui
+-- Dapatkan Player
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "ExcellentTeleport"
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 200)
-mainFrame.Position = UDim2.new(0, 50, 0, 50)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
+------------------------------------------------
+-- INTRO (Excellent Text)
+------------------------------------------------
+local intro = Instance.new("TextLabel")
+intro.Size = UDim2.new(1, 0, 1, 0)
+intro.BackgroundTransparency = 1
+intro.Text = "ＥＸＣＥＬＬＥＮＴ"
+intro.TextScaled = true
+intro.Font = Enum.Font.Arcade
+intro.TextColor3 = Color3.fromRGB(128, 0, 128) -- ungu
+intro.Parent = gui
+
+-- Animasi intro
+intro.TextTransparency = 1
+game:GetService("TweenService"):Create(intro, TweenInfo.new(1.5), {TextTransparency = 0}):Play()
+task.wait(2)
+game:GetService("TweenService"):Create(intro, TweenInfo.new(1.5), {TextTransparency = 1}):Play()
+task.wait(1)
+intro:Destroy()
+
+------------------------------------------------
+-- MENU FRAME
+------------------------------------------------
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 300)
+frame.Position = UDim2.new(0.05, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BackgroundTransparency = 0.2
+frame.Visible = true
+frame.Parent = gui
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-title.Text = "Teleport Menu"
-title.TextColor3 = Color3.fromRGB(255,255,255)
-title.Font = Enum.Font.SourceSansBold
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "🏔️ Teleport Gunung"
+title.Font = Enum.Font.GothamBold
 title.TextSize = 18
-title.Parent = mainFrame
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Parent = frame
 
--- Tombol Hide
-local hideBtn = Instance.new("TextButton")
-hideBtn.Size = UDim2.new(0, 60, 0, 25)
-hideBtn.Position = UDim2.new(1, -70, 0, 5)
-hideBtn.Text = "Hide"
-hideBtn.TextColor3 = Color3.fromRGB(255,255,255)
-hideBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
-hideBtn.Parent = mainFrame
+-- Scroll untuk tombol gunung
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -10, 1, -40)
+scroll.Position = UDim2.new(0, 5, 0, 35)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = 6
+scroll.Parent = frame
 
--- Tombol Show (icon kecil)
-local showBtn = Instance.new("TextButton")
-showBtn.Size = UDim2.new(0, 40, 0, 40)
-showBtn.Position = UDim2.new(0, 10, 0, 100)
-showBtn.Text = "+"
-showBtn.TextScaled = true
-showBtn.TextColor3 = Color3.fromRGB(255,255,255)
-showBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
-showBtn.Visible = false
-showBtn.Active = true
-showBtn.Draggable = true
-showBtn.Parent = screenGui
-
--- Event tombol Hide/Show
-hideBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    showBtn.Visible = true
-end)
-
-showBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = true
-    showBtn.Visible = false
-end)
-
--- Fungsi teleport aman (pakai raycast)
-local function safeTeleport(cf)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local ray = Ray.new(cf.Position + Vector3.new(0, 50, 0), Vector3.new(0, -500, 0))
-    local part, pos = workspace:FindPartOnRay(ray, LocalPlayer.Character)
-
-    if pos then
-        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0))
-    else
-        hrp.CFrame = cf
-    end
-end
-
--- Fungsi untuk trigger checkpoint (biar summit count nambah)
-local function triggerCheckpoint()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("TouchTransmitter") and obj.Parent then
-            local part = obj.Parent
-            if part:IsA("BasePart") and part.Name:lower():find("checkpoint") then
-                firetouchinterest(hrp, part, 0)
-                task.wait(0.2)
-                firetouchinterest(hrp, part, 1)
-            end
-        end
-    end
-end
-
--- Daftar checkpoint
-local checkpoints = {
-    ["Puncak"] = CFrame.new(151, 195, 127),
-    ["Pilih Mode"] = CFrame.new(114, 231, 122)
+------------------------------------------------
+-- DATA GUNUNG
+------------------------------------------------
+local Teleports = {
+    ["Mount Kawah Terjun"] = Vector3.new(100, 50, 200),
+    ["Mount Summit"] = Vector3.new(150, 120, 300),
+    ["Mount Merapi"] = Vector3.new(-50, 80, 400),
+    ["Mount Slamet"] = Vector3.new(250, 200, 100),
+    ["Mount Bromo"] = Vector3.new(350, 180, -250),
 }
 
--- Buat tombol teleport
-local i = 0
-for name, cf in pairs(checkpoints) do
-    i += 1
+------------------------------------------------
+-- GENERATE TOMBOL
+------------------------------------------------
+local yPos = 0
+for name, pos in pairs(Teleports) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.Position = UDim2.new(0, 5, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(90, 0, 120)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Parent = scroll
+
+    btn.MouseButton1Click:Connect(function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+        hrp.CFrame = CFrame.new(pos)
+    end)
+
+    yPos = yPos + 45
+end
+
+scroll.CanvasSize = UDim2.new(0,0,0,yPos)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 30)
     btn.Position = UDim2.new(0, 5, 0, 45 + (i-1)*35)
