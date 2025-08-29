@@ -1,8 +1,8 @@
---// Auto Teleport + Auto Hold ProximityPrompt + Simple GUI
 local player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
--- Kontrol script
+-- Script control
 local scriptEnabled = false
 local autoTeleport = false
 local holdingPrompt = false
@@ -16,45 +16,82 @@ local checkpoints = {
 }
 local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
--- GUI utama
-local pg = player:WaitForChild("PlayerGui")
-local sg = Instance.new("ScreenGui", pg)
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
-local frame = Instance.new("Frame", sg)
-frame.Size = UDim2.new(0,220,0,60)
-frame.Position = UDim2.new(0.5,-110,0.5,-30)
-frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-frame.BackgroundTransparency = 0.8
-frame.BorderSizePixel = 2
-frame.BorderColor3 = Color3.fromRGB(200,0,200)
-frame.BorderTransparency = 0.5
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0,200,0,50)
+Frame.Position = UDim2.new(0.5,-100,0.5,-25)
+Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Frame.BorderSizePixel = 0
+Frame.Visible = true
 
--- Tombol toggle Auto Teleport
-local toggle = Instance.new("TextButton", frame)
-toggle.Size = UDim2.new(1,-30,1,-10)
-toggle.Position = UDim2.new(0,5,0,5)
-toggle.BackgroundColor3 = Color3.fromRGB(0,0,0)
-toggle.BackgroundTransparency = 0.8
-toggle.BorderSizePixel = 1
-toggle.BorderColor3 = Color3.fromRGB(200,0,200)
-toggle.TextColor3 = Color3.fromRGB(255,255,255)
-toggle.Text = "Auto Teleport: OFF"
-toggle.Font = Enum.Font.SourceSansBold
-toggle.TextSize = 16
+local toggleBtn = Instance.new("TextButton", Frame)
+toggleBtn.Size = UDim2.new(1,-10,1,-10)
+toggleBtn.Position = UDim2.new(0,5,0,5)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+toggleBtn.BackgroundTransparency = 0.5
+toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+toggleBtn.Text = "Auto Teleport: OFF"
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.TextSize = 18
 
--- Tombol Hide/Show
-local hideBtn = Instance.new("TextButton", frame)
-hideBtn.Size = UDim2.new(0,20,0,20)
-hideBtn.Position = UDim2.new(1,-25,0,5)
-hideBtn.BackgroundColor3 = Color3.fromRGB(200,0,200)
-hideBtn.BackgroundTransparency = 0.5
-hideBtn.Text = "X"
-hideBtn.TextSize = 14
-hideBtn.TextColor3 = Color3.fromRGB(255,255,255)
-hideBtn.Font = Enum.Font.SourceSansBold
+-- Icon button
+local iconBtn = Instance.new("TextButton", ScreenGui)
+iconBtn.Size = UDim2.new(0,40,0,40)
+iconBtn.Position = UDim2.new(0,10,0.5,-20)
+iconBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+iconBtn.TextColor3 = Color3.fromRGB(255,255,255)
+iconBtn.Text = "≡"
+iconBtn.Font = Enum.Font.SourceSansBold
+iconBtn.TextSize = 24
 
-hideBtn.MouseButton1Click:Connect(function()
-    frame.Visible = not frame.Visible
+-- Show/hide GUI
+local guiVisible = true
+iconBtn.MouseButton1Click:Connect(function()
+    guiVisible = not guiVisible
+    Frame.Visible = guiVisible
+end)
+
+-- Drag icon
+local dragging, dragInput, dragStart, startPos = false
+iconBtn.InputBegan:Connect(function(input)
+    if not scriptEnabled then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = iconBtn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+iconBtn.InputChanged:Connect(function(input)
+    if not scriptEnabled then return end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if not scriptEnabled then return end
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        iconBtn.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        Frame.Position = UDim2.new(
+            0,
+            iconBtn.Position.X.Offset + 50,
+            iconBtn.Position.Y.Scale,
+            iconBtn.Position.Y.Offset - 25
+        )
+    end
 end)
 
 -- Teleport function
@@ -64,7 +101,7 @@ local function teleportTo(cf)
     hrp.CFrame = cf + Vector3.new(0,3,0)
 end
 
--- Auto teleport loop
+-- Auto teleport
 local function startAutoTeleport()
     spawn(function()
         while autoTeleport and scriptEnabled do
@@ -81,20 +118,20 @@ local function startAutoTeleport()
 end
 
 -- Toggle button
-toggle.MouseButton1Click:Connect(function()
+toggleBtn.MouseButton1Click:Connect(function()
     scriptEnabled = not scriptEnabled
     autoTeleport = scriptEnabled
     if scriptEnabled then
-        toggle.Text = "Auto Teleport: ON"
-        toggle.TextColor3 = Color3.fromRGB(200,0,200)
+        toggleBtn.Text = "Auto Teleport: ON"
+        toggleBtn.TextColor3 = Color3.fromRGB(200,0,200)
         startAutoTeleport()
     else
-        toggle.Text = "Auto Teleport: OFF"
-        toggle.TextColor3 = Color3.fromRGB(255,255,255)
+        toggleBtn.Text = "Auto Teleport: OFF"
+        toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
     end
 end)
 
--- Auto hold ProximityPrompt loop
+-- Optimized auto hold ProximityPrompt
 spawn(function()
     while true do
         task.wait(0.2)
@@ -102,6 +139,27 @@ spawn(function()
         if not player.Character then continue end
         local hrp = player.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
+
+        for _,prompt in pairs(workspace:GetDescendants()) do
+            if not scriptEnabled then break end
+            if prompt:IsA("ProximityPrompt") and prompt.Enabled and not holdingPrompt then
+                local distance = (prompt.Parent.Position - hrp.Position).Magnitude
+                if distance <= prompt.MaxActivationDistance then
+                    spawn(function()
+                        holdingPrompt = true
+                        prompt:InputHoldBegin()
+                        task.wait(prompt.HoldDuration)
+                        prompt:InputHoldEnd()
+                        holdingPrompt = false
+                        pauseAfterPrompt = true
+                        task.wait(0.5)
+                        pauseAfterPrompt = false
+                    end)
+                end
+            end
+        end
+    end
+end)
 
         for _,prompt in pairs(workspace:GetDescendants()) do
             if not scriptEnabled then break end
