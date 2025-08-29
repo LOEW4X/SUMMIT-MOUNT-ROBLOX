@@ -1,7 +1,7 @@
 --// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Auto ProximityPrompt Hold
 local player = game.Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 -- Daftar checkpoint
 local checkpoints = {
@@ -13,12 +13,12 @@ local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
 -- Buat ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = game.CoreGui
+ScreenGui.Parent = player:WaitForChild("PlayerGui") -- pastikan muncul
 
 -- Frame utama GUI
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 200, 0, 50)
-Frame.Position = UDim2.new(0, 60, 0.5, -25)
+Frame.Position = UDim2.new(0.5, -100, 0.5, -25) -- posisi di tengah layar
 Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Frame.BorderSizePixel = 0
 Frame.Visible = true
@@ -126,7 +126,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Auto click ProximityPrompt dengan hold sesuai durasi
+-- Auto click ProximityPrompt dengan hold sesuai HoldDuration
 RunService.Heartbeat:Connect(function()
     if not player.Character then return end
     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
@@ -144,75 +144,5 @@ RunService.Heartbeat:Connect(function()
                 end)
             end
         end
-    end
-end)
-end)
-
-iconBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        iconBtn.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-        -- GUI utama mengikuti ikon
-        Frame.Position = UDim2.new(
-            0,
-            iconBtn.Position.X.Offset + 50,
-            iconBtn.Position.Y.Scale,
-            iconBtn.Position.Y.Offset - 25
-        )
-    end
-end)
-
--- Auto click ProximityPrompt
-RunService.Heartbeat:Connect(function()
-    for _, prompt in pairs(workspace:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-            local playerChar = player.Character
-            if playerChar and playerChar:FindFirstChild("HumanoidRootPart") then
-                local hrp = playerChar.HumanoidRootPart
-                local distance = (prompt.Parent.Position - hrp.Position).Magnitude
-                if distance <= prompt.MaxActivationDistance then
-                    prompt:InputHoldBegin()
-                    prompt:InputHoldEnd()
-                end
-            end
-        end
-    end
-end)
-    end
-end)
-
-iconBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        iconBtn.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-        -- GUI utama mengikuti ikon
-        Frame.Position = UDim2.new(
-            0,
-            iconBtn.Position.X.Offset + 50,
-            iconBtn.Position.Y.Scale,
-            iconBtn.Position.Y.Offset - 25
-        )
     end
 end)
