@@ -1,7 +1,7 @@
---// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Auto ProximityPrompt Hold
+--// Teleport GUI + Auto Teleport + Draggable Menu + Stylish Button + Auto Hold ProximityPrompt dengan Pause Teleport
 local player = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 -- Daftar checkpoint
 local checkpoints = {
@@ -13,12 +13,12 @@ local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
 -- Buat ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = player:WaitForChild("PlayerGui") -- pastikan muncul
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Frame utama GUI
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 200, 0, 50)
-Frame.Position = UDim2.new(0.5, -100, 0.5, -25) -- posisi di tengah layar
+Frame.Position = UDim2.new(0.5, -100, 0.5, -25)
 Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Frame.BorderSizePixel = 0
 Frame.Visible = true
@@ -35,7 +35,7 @@ toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.TextSize = 18
 
 local autoTeleport = false
-local teleportThread
+local pauseTeleport = false -- pause saat hold proximity
 
 local function teleportTo(cf)
     local char = player.Character or player.CharacterAdded:Wait()
@@ -44,12 +44,16 @@ local function teleportTo(cf)
 end
 
 local function startAutoTeleport()
-    teleportThread = spawn(function()
+    spawn(function()
         while autoTeleport do
             for _, name in ipairs(checkpointOrder) do
                 if not autoTeleport then break end
+                -- tunggu jika sedang pause
+                while pauseTeleport and autoTeleport do
+                    wait()
+                end
                 teleportTo(checkpoints[name])
-                wait(1) -- delay antar checkpoint
+                wait(1)
             end
         end
     end)
@@ -63,7 +67,7 @@ toggleBtn.MouseButton1Click:Connect(function()
         startAutoTeleport()
     else
         toggleBtn.Text = "Auto Teleport: OFF"
-        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255) -- Putih
+        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 end)
 
@@ -77,17 +81,14 @@ iconBtn.Text = "≡"
 iconBtn.Font = Enum.Font.SourceSansBold
 iconBtn.TextSize = 24
 
--- Show/Hide GUI
 local guiVisible = true
 iconBtn.MouseButton1Click:Connect(function()
     guiVisible = not guiVisible
     Frame.Visible = guiVisible
 end)
 
--- Drag bebas ikon menu
-local dragging = false
-local dragInput, dragStart, startPos
-
+-- Drag ikon menu
+local dragging, dragInput, dragStart, startPos = false
 iconBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -100,13 +101,11 @@ iconBtn.InputBegan:Connect(function(input)
         end)
     end
 end)
-
 iconBtn.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
@@ -116,7 +115,6 @@ UserInputService.InputChanged:Connect(function(input)
             startPos.Y.Scale,
             startPos.Y.Offset + delta.Y
         )
-        -- GUI utama mengikuti ikon
         Frame.Position = UDim2.new(
             0,
             iconBtn.Position.X.Offset + 50,
@@ -126,7 +124,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Auto click ProximityPrompt dengan hold sesuai HoldDuration
+-- Auto hold ProximityPrompt dengan pause Auto Teleport
 RunService.Heartbeat:Connect(function()
     if not player.Character then return end
     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
@@ -136,11 +134,12 @@ RunService.Heartbeat:Connect(function()
         if prompt:IsA("ProximityPrompt") and prompt.Enabled then
             local distance = (prompt.Parent.Position - hrp.Position).Magnitude
             if distance <= prompt.MaxActivationDistance then
-                -- Tekan sesuai HoldDuration
                 spawn(function()
+                    pauseTeleport = true -- pause auto teleport
                     prompt:InputHoldBegin()
                     wait(prompt.HoldDuration)
                     prompt:InputHoldEnd()
+                    pauseTeleport = false -- lanjut auto teleport
                 end)
             end
         end
