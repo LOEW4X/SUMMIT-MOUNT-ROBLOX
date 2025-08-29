@@ -1,33 +1,35 @@
---// Teleport GUI with Auto Teleport On/Off (Delay 1 detik)
+--// Teleport GUI with Auto Teleport & Draggable Menu Icon + Stylish Button
 -- Dibuat untuk Executor (loadstring)
 
 local player = game.Players.LocalPlayer
 
--- Daftar checkpoint kamu
+-- Daftar checkpoint
 local checkpoints = {
-    ["CP 1"] = CFrame.new(171, -213, 74),
-    ["PUNCAK"] = CFrame.new(151, -195, 127),
-    ["MODE"] = CFrame.new(114, -231, 122)
+    ["CP 1"] = CFrame.new(171, -213, 74),
+    ["PUNCAK"] = CFrame.new(151, -195, 127),
+    ["MODE"] = CFrame.new(114, -231, 122)
 }
 
--- Urutkan checkpoints sesuai daftar
 local checkpointOrder = {"CP 1", "PUNCAK", "MODE"}
 
--- Buat GUI
+-- Buat ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
 
+-- Frame utama GUI
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 200, 0, 50)
-Frame.Position = UDim2.new(0, 20, 0.5, -25)
+Frame.Position = UDim2.new(0, 60, 0.5, -25)
 Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Frame.BorderSizePixel = 0
+Frame.Visible = true
 
--- Tombol On/Off
+-- Tombol On/Off Auto Teleport (Hitam semi transparan)
 local toggleBtn = Instance.new("TextButton", Frame)
 toggleBtn.Size = UDim2.new(1, -10, 1, -10)
 toggleBtn.Position = UDim2.new(0, 5, 0, 5)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+toggleBtn.BackgroundTransparency = 0.5
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleBtn.Text = "Auto Teleport: OFF"
 toggleBtn.Font = Enum.Font.SourceSansBold
@@ -37,27 +39,93 @@ local autoTeleport = false
 local teleportThread
 
 local function teleportTo(cf)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    hrp.CFrame = cf + Vector3.new(0, 3, 0)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    hrp.CFrame = cf + Vector3.new(0, 3, 0)
 end
 
 local function startAutoTeleport()
-    teleportThread = spawn(function()
-        while autoTeleport do
-            for _, name in ipairs(checkpointOrder) do
-                if not autoTeleport then break end
-                teleportTo(checkpoints[name])
-                wait(1) -- delay 1 detik antar teleport
-            end
-        end
-    end)
+    teleportThread = spawn(function()
+        while autoTeleport do
+            for _, name in ipairs(checkpointOrder) do
+                if not autoTeleport then break end
+                teleportTo(checkpoints[name])
+                wait(1) -- delay 1 detik
+            end
+        end
+    end)
 end
 
 toggleBtn.MouseButton1Click:Connect(function()
-    autoTeleport = not autoTeleport
-    toggleBtn.Text = autoTeleport and "Auto Teleport: ON" or "Auto Teleport: OFF"
-    if autoTeleport then
-        startAutoTeleport()
-    end
+    autoTeleport = not autoTeleport
+    if autoTeleport then
+        toggleBtn.Text = "Auto Teleport: ON"
+        toggleBtn.TextColor3 = Color3.fromRGB(200, 0, 200) -- Ungu
+    else
+        toggleBtn.Text = "Auto Teleport: OFF"
+        toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255) -- Putih
+    end
+    if autoTeleport then
+        startAutoTeleport()
+    end
+end)
+
+-- Tombol icon menu
+local iconBtn = Instance.new("TextButton", ScreenGui)
+iconBtn.Size = UDim2.new(0, 40, 0, 40)
+iconBtn.Position = UDim2.new(0, 10, 0.5, -20)
+iconBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+iconBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+iconBtn.Text = "≡"
+iconBtn.Font = Enum.Font.SourceSansBold
+iconBtn.TextSize = 24
+
+-- Show/Hide GUI
+local guiVisible = true
+iconBtn.MouseButton1Click:Connect(function()
+    guiVisible = not guiVisible
+    Frame.Visible = guiVisible
+end)
+
+-- Drag bebas ikon menu
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+local dragInput, dragStart, startPos
+
+iconBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = iconBtn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+iconBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        iconBtn.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        -- GUI utama mengikuti ikon
+        Frame.Position = UDim2.new(
+            0,
+            iconBtn.Position.X.Offset + 50,
+            iconBtn.Position.Y.Scale,
+            iconBtn.Position.Y.Offset - 25
+        )
+    end
 end)
