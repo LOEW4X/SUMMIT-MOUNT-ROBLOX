@@ -4,7 +4,7 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 
 local checkpoints = {
     ["CP 1"] = CFrame.new(171, -213, 74),
-    ["PUNCAK"] = CFrame.new(151, -195, 127),
+    ["PUNCAK"] = CFrame.new(150, -197, 126),
     ["MODE"] = CFrame.new(114, -231, 122)
 }
 
