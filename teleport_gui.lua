@@ -14,7 +14,7 @@ ScreenGui.ResetOnSpawn = false
 
 -- Frame untuk menu teleport
 local menuFrame = Instance.new("Frame")
-menuFrame.Size = UDim2.new(0, 200, 0, 150) -- tinggi sementara
+menuFrame.Size = UDim2.new(0, 200, 0, 150) -- tinggi
 menuFrame.Position = UDim2.new(0, 20, 0, 60)
 menuFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 menuFrame.BackgroundTransparency = 0.8
