@@ -4,7 +4,7 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 
 local checkpoints = {
     ["CP 1"] = CFrame.new(171, -213, 74),
-    ["PUNCAK"] = CFrame.new(159, -220, 160),
+    ["PUNCAK"] = CFrame.new(150, -197, 126),
     ["MODE"] = CFrame.new(114, -231, 122)
 }
 
@@ -62,26 +62,4 @@ toggleBtn.TextSize = 24
 
 toggleBtn.MouseButton1Click:Connect(function()
     menuFrame.Visible = not menuFrame.Visible
-end)    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        toggleBtn.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        toggleBtn.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
 end)
