@@ -1,4 +1,4 @@
--- [ SIMPLE TELEPORT MENU WITH TOGGLE ]
+-- [ SIMPLE TELEPORT MENU WITH TOGGLE AND DRAG ]
 local player = game.Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 
@@ -37,7 +37,6 @@ for name, cf in pairs(checkpoints) do
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             player.Character.HumanoidRootPart.CFrame = cf
         end
-        -- kalau ke PUNCAK auto tambah Summit
         if name == "PUNCAK" then
             local leaderstats = player:FindFirstChild("leaderstats")
             if leaderstats and leaderstats:FindFirstChild("Summit") then
@@ -49,27 +48,56 @@ for name, cf in pairs(checkpoints) do
     y = y + 50
 end
 
--- tombol toggle (ikon kecil)
+-- tombol toggle (dragable)
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Parent = ScreenGui
 toggleBtn.Size = UDim2.new(0,50,0,50)
 toggleBtn.Position = UDim2.new(0,20,0,10)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
-toggleBtn.Text = "≡" -- simbol menu
+toggleBtn.Text = "≡"
 toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.TextSize = 24
 
 toggleBtn.MouseButton1Click:Connect(function()
     menuFrame.Visible = not menuFrame.Visible
-end)game:GetService("UserInputService").InputChanged:Connect(function(input)
+end)
+
+-- Drag system
+local UserInputService = game:GetService("UserInputService")
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+toggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = toggleBtn.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+toggleBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
-        local delta = input.Position - mousePos
+        local delta = input.Position - dragStart
         toggleBtn.Position = UDim2.new(
-            framePos.X.Scale,
-            framePos.X.Offset + delta.X,
-            framePos.Y.Scale,
-            framePos.Y.Offset + delta.Y
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
         )
     end
 end)
